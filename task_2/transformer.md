@@ -50,3 +50,37 @@ To regenerate visuals:
 pip install matplotlib numpy
 python make_transformer_images.py
 ```
+## Code for Visualizations
+
+The following Python code generates the attention and positional encoding visualizations used in this report.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+os.makedirs("images", exist_ok=True)
+
+# ---- Attention Heatmap ----
+attention = np.random.rand(6,6)
+
+plt.imshow(attention)
+plt.colorbar()
+plt.title("Self-Attention Weights")
+plt.xlabel("Key positions")
+plt.ylabel("Query positions")
+plt.savefig("images/attention.png")
+plt.close()
+
+# ---- Positional Encoding ----
+pos = np.arange(0,50)
+pe = np.sin(pos/10)
+
+plt.plot(pos, pe)
+plt.title("Positional Encoding Pattern")
+plt.xlabel("Position")
+plt.ylabel("Encoding value")
+plt.savefig("images/positional_encoding.png")
+plt.close()
+```
+
