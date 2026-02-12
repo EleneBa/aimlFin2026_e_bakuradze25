@@ -11,8 +11,10 @@ The goal of this task is to analyze a web server log file and identify time inte
 - Original source:
   http://max.ge/aiml_final/e_bakuradze25_23456_server.log
 
-- Local copy (uploaded in this folder):
-  `e_bakuradze25_23456_server.log`
+-- I couldnt upload log file in Guthub so I left here only the initial link provided. But Ive added the log file in pychatrm to work on it
+
+<img width="1895" height="937" alt="image" src="https://github.com/user-attachments/assets/84284b81-81c0-4cf0-8611-583ea3f567c4" />
+
 
 The log contains IP addresses, timestamps, HTTP methods, status codes, and user-agent strings.
 
