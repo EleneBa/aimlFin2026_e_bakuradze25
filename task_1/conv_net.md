@@ -2,7 +2,6 @@
 
 ## 1. What is a CNN? (Conceptual Overview)
 
-Write 200+ words total across sections 1–2.
 
 ### Key building blocks
 - **Convolution layer**: learns local patterns via filters/kernels.
