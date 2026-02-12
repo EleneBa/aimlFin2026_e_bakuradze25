@@ -15,6 +15,10 @@ The goal of this task is to analyze a web server log file and identify time inte
 
 <img width="1895" height="937" alt="image" src="https://github.com/user-attachments/assets/84284b81-81c0-4cf0-8611-583ea3f567c4" />
 
+please see the error it gives me when trying to uploade the event log file
+<img width="1085" height="691" alt="image" src="https://github.com/user-attachments/assets/5108bddc-f13c-473f-9390-659eb790be35" />
+
+
 
 The log contains IP addresses, timestamps, HTTP methods, status codes, and user-agent strings.
 
