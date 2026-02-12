@@ -102,7 +102,7 @@ During this period, request volume significantly exceeded the regression baselin
 
 Shows raw traffic intensity.
 
-![Requests](images/req_per_min.png)
+[![Requests](images/req_per_min.png)](https://github.com/EleneBa/aimlFin2026_e_bakuradze25/blob/main/task_3/req_per_min.png)
 
 ---
 
@@ -110,7 +110,7 @@ Shows raw traffic intensity.
 
 Highlighted regions indicate detected attack intervals.
 
-![Regression](images/regression_fit.png)
+[![Regression](images/regression_fit.png)](https://github.com/EleneBa/aimlFin2026_e_bakuradze25/blob/main/task_3/regression_fit.png) 
 
 ---
 
@@ -118,7 +118,7 @@ Highlighted regions indicate detected attack intervals.
 
 Values above threshold indicate anomalies.
 
-![Residuals](images/residuals.png)
+[![Residuals](images/residuals.png)](https://github.com/EleneBa/aimlFin2026_e_bakuradze25/blob/main/task_3/residuals.png) 
 
 ---
 
