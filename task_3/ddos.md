@@ -181,6 +181,211 @@ task_3/
 
 ```
 python detect_ddos_regression.py
+import re
+from pathlib import Path
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.linear_model import LinearRegression, RANSACRegressor
+
+
+# ----------------------------
+# Config
+# ----------------------------
+LOG_PATH = Path("e_bakuradze25_23456_server.log")  # must be in task_3/
+OUT_DIR = Path("images")
+OUT_DIR.mkdir(exist_ok=True)
+
+AGG_FREQ = "30s"         # requests per minute
+Z_THRESHOLD = 2.5         # residual z-score threshold
+MIN_CONSECUTIVE = 3       # minimum consecutive minutes for an interval
+
+
+# ----------------------------
+# Helpers
+# ----------------------------
+# Your log timestamp format example: [2024-03-22 18:00:53+04:00]
+TS_RE = re.compile(
+    r"\[(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})(?:\.\d+)?([+\-]\d{2}:\d{2})\]"
+)
+
+def parse_timestamp(line: str):
+    """
+    Parses timestamps like:
+      [2024-03-22 18:00:53+04:00]
+      [2024-03-22T18:00:53+04:00]
+      optionally with microseconds: [2024-03-22 18:00:53.123+04:00]
+    Returns timezone-aware datetime or None.
+    """
+    m = TS_RE.search(line)
+    if not m:
+        return None
+
+    dt_part = m.group(1).replace("T", " ")  # normalize
+    tz_part = m.group(2)
+
+    # If microseconds were present, regex stripped them, so format is stable
+    return datetime.strptime(dt_part + tz_part, "%Y-%m-%d %H:%M:%S%z")
+
+
+def merge_intervals(times: pd.DatetimeIndex, step: pd.Timedelta):
+    """
+    Merge consecutive timestamps spaced by <= step into intervals [start, end).
+    """
+    if len(times) == 0:
+        return []
+
+    times = times.sort_values()
+    intervals = []
+    start = times[0]
+    prev = times[0]
+
+    for t in times[1:]:
+        if (t - prev) <= step:
+            prev = t
+        else:
+            intervals.append((start, prev + step))
+            start = t
+            prev = t
+
+    intervals.append((start, prev + step))
+    return intervals
+
+
+# ----------------------------
+# Main
+# ----------------------------
+def main():
+    if not LOG_PATH.exists():
+        raise FileNotFoundError(f"Log file not found: {LOG_PATH.resolve()}")
+
+    # 1) Parse timestamps
+    timestamps = []
+    with LOG_PATH.open("r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            ts = parse_timestamp(line)
+            if ts is not None:
+                timestamps.append(ts)
+
+    if not timestamps:
+        raise ValueError(
+            "No timestamps parsed. Check the timestamp format in the log. "
+            "Expected like: [YYYY-MM-DD HH:MM:SS+TZ]"
+        )
+
+    df = pd.DataFrame({"ts": pd.to_datetime(timestamps)})
+    df = df.set_index("ts").sort_index()
+
+    # 2) Aggregate requests per minute
+    counts = df.resample(AGG_FREQ).size().rename("requests").to_frame()
+    counts = counts[counts["requests"] > 0]
+
+    if len(counts) < 10:
+        raise ValueError(
+            f"Not enough aggregated points for regression (got {len(counts)}). "
+            "Try a larger time window (e.g., AGG_FREQ='5min') or confirm log content."
+        )
+
+    # 3) Build regression features
+    t0 = counts.index.min()
+    seconds = (counts.index - t0).total_seconds().values.reshape(-1, 1)
+
+    minute_of_day = (counts.index.hour * 60 + counts.index.minute).values
+    sin_day = np.sin(2 * np.pi * minute_of_day / 1440.0).reshape(-1, 1)
+    cos_day = np.cos(2 * np.pi * minute_of_day / 1440.0).reshape(-1, 1)
+
+    X = np.hstack([seconds, sin_day, cos_day])
+    y = counts["requests"].values
+
+    # 4) Robust regression baseline (RANSAC)
+    base = LinearRegression()
+    model = RANSACRegressor(estimator=base, random_state=42)
+    model.fit(X, y)
+
+    y_pred = model.predict(X)
+    residual = y - y_pred
+
+    # 5) Thresholding on residuals (z-score)
+    resid_std = float(np.std(residual, ddof=1))
+    if resid_std == 0 or np.isnan(resid_std):
+        resid_std = 1.0
+
+    z = residual / resid_std
+
+    counts["predicted"] = y_pred
+    counts["residual"] = residual
+    counts["z"] = z
+
+    flagged = counts[counts["z"] >= Z_THRESHOLD]
+    step = pd.to_timedelta(AGG_FREQ)
+
+    # Merge consecutive flagged minutes into intervals
+    intervals = merge_intervals(flagged.index, step)
+
+    # Keep only intervals with enough consecutive bins
+    strong_intervals = []
+    for a, b in intervals:
+        bins = int((b - a) / step)
+        if bins >= MIN_CONSECUTIVE:
+            strong_intervals.append((a, b))
+
+    # 6) Visualizations
+    # (a) request series
+    plt.figure()
+    plt.plot(counts.index, counts["requests"])
+    plt.title(f"Requests per {AGG_FREQ}")
+    plt.xlabel("Time")
+    plt.ylabel(f"Requests / {AGG_FREQ}")
+    plt.tight_layout()
+    plt.savefig(OUT_DIR / "req_per_min.png")
+    plt.close()
+
+    # (b) regression fit + highlighted intervals
+    plt.figure()
+    plt.plot(counts.index, counts["requests"], label="actual")
+    plt.plot(counts.index, counts["predicted"], label="predicted")
+    for a, b in strong_intervals:
+        plt.axvspan(a, b, alpha=0.2)
+    plt.title("Regression baseline and detected DDoS intervals")
+    plt.xlabel("Time")
+    plt.ylabel(f"Requests / {AGG_FREQ}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(OUT_DIR / "regression_fit.png")
+    plt.close()
+
+    # (c) z-score residuals
+    plt.figure()
+    plt.plot(counts.index, counts["z"])
+    plt.axhline(Z_THRESHOLD)
+    plt.title("Residual z-score (attack if above threshold)")
+    plt.xlabel("Time")
+    plt.ylabel("z-score")
+    plt.tight_layout()
+    plt.savefig(OUT_DIR / "residuals.png")
+    plt.close()
+
+    # 7) Print results for ddos.md
+    print("\nDetected DDoS time interval(s):")
+    if not strong_intervals:
+        print("  None detected with current thresholds.")
+        print(f"  Tip: try Z_THRESHOLD=2.5 or AGG_FREQ='30s' if the log is very spiky.")
+    else:
+        for a, b in strong_intervals:
+            print(f"  {a}  ->  {b}")
+
+    # Save table for convenience
+    counts.to_csv("ddos_regression_output.csv", index=True)
+    print("\nSaved: images/*.png and ddos_regression_output.csv")
+
+
+if __name__ == "__main__":
+    main()
+
+
 ```
 
 ---
