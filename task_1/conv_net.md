@@ -12,8 +12,16 @@
 - **Fully-connected layer**: combines extracted features for final decision.
 - **Sigmoid/Softmax output**: outputs probability for binary/multi-class prediction.
 
-### Why CNNs work 
-Explain: local receptive fields, weight sharing, hierarchical feature learning.
+### Why CNNs work
+
+CNNs are effective because they exploit the spatial structure of data. Instead of treating inputs as flat vectors, they preserve the relative position of features. This is important when patterns depend on neighboring values, which is often the case in images and structured cybersecurity telemetry.
+
+A key concept is **local receptive fields**. Each neuron in a convolutional layer only looks at a small region of the input at a time. This allows the network to detect local patterns such as edges, shapes, or unusual feature combinations. In cybersecurity, this can help identify suspicious clusters of activity across related metrics.
+
+Another important idea is **weight sharing**. The same filter (set of weights) is applied across the entire input. This drastically reduces the number of parameters and allows the model to detect the same pattern anywhere in the data. For example, a malicious behavior pattern can be recognized regardless of where it appears in the feature grid.
+
+CNNs also use **hierarchical feature learning**. Early layers detect simple patterns, while deeper layers combine them into more complex representations. This layered learning enables CNNs to capture subtle and high-level structures, which is valuable for distinguishing benign from malicious behavior in cybersecurity monitoring systems.
+
 
 ---
 
