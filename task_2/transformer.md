@@ -28,7 +28,7 @@ Transformers can learn complex relationships in logs, network flows, and user be
 
 ## Attention Mechanism Visualization
 
-![Attention](images/attention.png)
+[![Attention](images/attention.png)](https://github.com/EleneBa/aimlFin2026_e_bakuradze25/blob/main/task_2/attention.png) 
 
 The heatmap shows how each token (query) attends to others (keys). Brighter values indicate stronger attention.
 
@@ -36,7 +36,7 @@ The heatmap shows how each token (query) attends to others (keys). Brighter valu
 
 ## Positional Encoding Visualization
 
-![Positional Encoding](images/positional_encoding.png)
+[![Positional Encoding](images/positional_encoding.png)](https://github.com/EleneBa/aimlFin2026_e_bakuradze25/blob/main/task_2/positional_encoding.png)
 
 The sinusoidal pattern represents how positional information is encoded so the model understands order.
 
